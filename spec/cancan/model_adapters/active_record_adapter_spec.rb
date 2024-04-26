@@ -1497,4 +1497,68 @@ RSpec.describe CanCan::ModelAdapters::ActiveRecordAdapter do
       expect(Motorbike.accessible_by(ability)).to eq([])
     end
   end
+
+  context 'when STI is in use' do
+    before do
+      ActiveRecord::Schema.define do
+        create_table(:brands) do |t|
+          t.references :user
+        end
+
+        create_table(:vehicles) do |t|
+          t.string :type
+          t.references :user
+        end
+      end
+
+      class ApplicationRecord < ActiveRecord::Base
+        self.abstract_class = true
+      end
+
+      class Brand < ApplicationRecord
+        belongs_to :user
+      end
+
+      class Vehicle < ApplicationRecord
+        belongs_to :user
+      end
+
+      class Car < Vehicle
+      end
+
+      class Motorbike < Vehicle
+      end
+
+      class Suzuki < Motorbike
+      end
+    end
+
+    it 'does not omit weird queries without conditions' do
+      user = User.create!
+
+      brand = Brand.create!(user: user)
+      car = Car.create!(user: user)
+      motorbike = Motorbike.create!(user: user)
+      suzuki = Suzuki.create!(user: user)
+
+      ability = Ability.new(user)
+      ability.can :read, [Brand, Vehicle]
+      expect(Brand.accessible_by(ability)).to match_array([brand])
+      expect(Vehicle.accessible_by(ability)).to match_array([car, motorbike, suzuki])
+    end
+
+    it 'does omit weird queries with conditions' do
+      user = User.create!
+
+      brand = Brand.create!(user: user)
+      car = Car.create!(user: user)
+      motorbike = Motorbike.create!(user: user)
+      suzuki = Suzuki.create!(user: user)
+
+      ability = Ability.new(user)
+      ability.can :read, [Brand, Vehicle], user_id: user.id
+      expect(Brand.accessible_by(ability)).to match_array([brand])
+      expect(Vehicle.accessible_by(ability)).to match_array([car, motorbike, suzuki])
+    end
+  end
 end
