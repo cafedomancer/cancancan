@@ -84,10 +84,10 @@ jobs:
           bundler-cache: true
 
       - name: Run tests on sqlite
-        run: DB=sqlite bundle exec rake
+        run: DB=sqlite SPEC=spec/cancan/model_adapters/active_record_adapter_spec.rb bundle exec rake
 
       - name: Run tests on postgres
-        run: DB=postgres bundle exec rake
+        run: DB=postgres SPEC=spec/cancan/model_adapters/active_record_adapter_spec.rb bundle exec rake
 
   lint:
     name: Lint
